@@ -8,7 +8,6 @@
 packages/
   ├── demo-expo-app/      # React Native / Expo 应用
   ├── demo-tauri-app/     # Tauri 桌面应用
-  ├── demo-electron-vite/ # Electron 桌面应用
   ├── demo-react-vite/    # React + Vite Web 应用
   └── demo-taro-react/    # 多端小程序应用 (Taro)
 ```
@@ -62,9 +61,6 @@ yarn clean
 # 运行特定包的开发服务器
 yarn workspace demo-react-vite dev
 
-# 构建特定包
-yarn workspace demo-electron-vite build
-
 # 运行特定包的测试
 yarn workspace demo-expo-app test
 ```
@@ -99,18 +95,6 @@ yarn workspace demo-tauri-app build
 
 # 运行 Tauri 开发
 yarn workspace demo-tauri-app tauri dev
-```
-
-### demo-electron-vite
-
-基于 Electron 和 Vite 的桌面应用。
-
-```bash
-# 运行开发服务器
-yarn workspace demo-electron-vite dev
-
-# 构建应用
-yarn workspace demo-electron-vite build
 ```
 
 ### demo-react-vite
@@ -157,7 +141,6 @@ yarn workspace demo-taro-react build:weapp
 
 - [demo-expo-app](https://github.com/umworks/demo-expo-app)
 - [demo-tauri-app](https://github.com/umworks/demo-tauri-app)
-- [demo-electron-vite](https://github.com/umworks/demo-electron-vite)
 - [demo-react-vite](https://github.com/umworks/demo-react-vite)
 - [demo-taro-react](https://github.com/umworks/demo-taro-react)
 

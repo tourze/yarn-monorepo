@@ -21,7 +21,6 @@ console.log(`Current directory: ${baseDir}`);
 const config = [
   ['packages/demo-expo-app', 'umworks/demo-expo-app', 'main'],
   ['packages/demo-tauri-app', 'umworks/demo-tauri-app', 'main'],
-  ['packages/demo-electron-vite', 'umworks/demo-electron-vite', 'main'],
   ['packages/demo-react-vite', 'umworks/demo-react-vite', 'main'],
   ['packages/demo-taro-react', 'umworks/demo-taro-react', 'main'],
 ];
