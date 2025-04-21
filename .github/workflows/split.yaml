@@ -1,0 +1,42 @@
+name: 'Packages Split'
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - '*'
+
+jobs:
+  packages_split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v46.0.5
+        with:
+          since_last_remote_commit: true
+
+      - name: List all changed files
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_modified_files }}
+        run: |
+          for file in ${ALL_CHANGED_FILES}; do
+            echo "$file was changed"
+          done
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run split script
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_modified_files }}
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        run: GITHUB_SHA="${GITHUB_SHA}" node split-repo.js
