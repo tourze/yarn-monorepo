@@ -272,7 +272,20 @@ console.log('所有任务已完成');
  * 创建提交信息
  */
 function createCommitMessage(commitSha) {
-  return `Split from monorepo commit ${commitSha}`;
+  try {
+    if (commitSha === 'latest') {
+      return 'Split from monorepo latest commit';
+    }
+
+    // 获取原始提交消息的第一行
+    const output = execSync(`git show -s --format=%B ${commitSha}`, { encoding: 'utf8' });
+    const lines = output.trim().split('\n');
+    // 返回第一行作为提交消息，如果没有则使用默认消息
+    return lines[0] || `Split from monorepo commit ${commitSha}`;
+  } catch (error) {
+    console.warn(`无法获取提交 ${commitSha} 的消息:`, error.message);
+    return `Split from monorepo commit ${commitSha}`;
+  }
 }
 
 /**
