@@ -5,15 +5,34 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+// 输出环境信息以便调试
+console.log(`Node.js version: ${process.version}`);
+console.log(`Operating system: ${os.platform()} ${os.release()}`);
+console.log(`GITHUB_SHA: ${process.env.GITHUB_SHA || 'not set'}`);
+console.log(`GITHUB_TOKEN length: ${process.env.GITHUB_TOKEN ? process.env.GITHUB_TOKEN.length : 0}`);
+
 // 配置 Git
 execSync('git config --global user.name github-ci');
 execSync('git config --global user.email github-ci@example.com');
 
 // 临时目录
-const cloneDirectory = path.join(os.tmpdir(), 'monorepo_split', 'clone_directory');
-const buildDirectory = path.join(os.tmpdir(), 'monorepo_split', 'build_directory');
+const monorepoSplitDir = path.join(os.tmpdir(), 'monorepo_split');
+const cloneDirectory = path.join(monorepoSplitDir, 'clone_directory');
+const buildDirectory = path.join(monorepoSplitDir, 'build_directory');
 const accessToken = process.env.GITHUB_TOKEN;
 const baseDir = process.cwd();
+
+// 输出目录信息
+console.log(`Base directory: ${baseDir}`);
+console.log(`Temp directory: ${monorepoSplitDir}`);
+console.log(`Clone directory: ${cloneDirectory}`);
+console.log(`Build directory: ${buildDirectory}`);
+
+// 确保临时目录存在
+console.log('Creating temporary directories...');
+fs.mkdirSync(monorepoSplitDir, { recursive: true });
+fs.mkdirSync(cloneDirectory, { recursive: true });
+fs.mkdirSync(buildDirectory, { recursive: true });
 
 console.log(`Current directory: ${baseDir}`);
 
@@ -26,7 +45,9 @@ const config = [
 ];
 
 // 获取最近提交修改的文件
-const changedFiles = (process.env.ALL_CHANGED_FILES || '').split(' ').filter(Boolean);
+const changedFilesString = process.env.ALL_CHANGED_FILES || '';
+console.log('ALL_CHANGED_FILES env variable:', changedFilesString);
+const changedFiles = changedFilesString.split(' ').filter(Boolean);
 console.log('Changed files:', changedFiles);
 
 // 确定哪些包被修改了
@@ -40,7 +61,19 @@ for (const file of changedFiles) {
   }
 }
 
-console.log(`Processing ${Object.keys(modifiedPackages).length} modified packages`);
+const modifiedPackageCount = Object.keys(modifiedPackages).length;
+console.log(`Processing ${modifiedPackageCount} modified packages`);
+
+if (modifiedPackageCount === 0) {
+  console.log('No packages were modified. Exiting.');
+  process.exit(0);
+}
+
+// 检查是否有 GitHub 令牌
+if (!accessToken) {
+  console.error('GITHUB_TOKEN 环境变量未设置或为空，请确保提供有效的访问令牌。');
+  process.exit(1);
+}
 
 // 处理每个修改的包
 for (const [index, [localDirectory, remoteDirectory, branch = 'main']] of config.entries()) {
@@ -49,28 +82,74 @@ for (const [index, [localDirectory, remoteDirectory, branch = 'main']] of config
     continue;
   }
 
+  console.log(`\n----- 处理包 ${localDirectory} -> ${remoteDirectory} (分支: ${branch}) -----\n`);
+
   // 清理临时目录
-  execSync(`rm -rf ${cloneDirectory}`);
-  execSync(`rm -rf ${buildDirectory}`);
+  try {
+    console.log('清理临时目录...');
+    if (fs.existsSync(cloneDirectory)) {
+      execSync(`rm -rf ${cloneDirectory}/*`, { stdio: 'inherit' });
+    }
+    if (fs.existsSync(buildDirectory)) {
+      execSync(`rm -rf ${buildDirectory}/*`, { stdio: 'inherit' });
+    }
+  } catch (error) {
+    console.log('清理目录时出错，但继续执行:', error.message);
+  }
 
   const hostRepositoryOrganizationName = `github.com/${remoteDirectory}`;
 
   // 克隆目标仓库
-  const clonedRepository = `https://${hostRepositoryOrganizationName}`;
-  console.log(`Cloning "${clonedRepository}" repository to "${cloneDirectory}" directory`);
+  const tokenUrl = `https://${accessToken}@${hostRepositoryOrganizationName}`;
+  console.log(`Cloning "${hostRepositoryOrganizationName}" repository to "${cloneDirectory}" directory`);
 
+  let isNewRepository = false;
   try {
-    execSync(`git clone -- https://${accessToken}@${hostRepositoryOrganizationName} ${cloneDirectory}`, { stdio: 'inherit' });
+    fs.rmSync(cloneDirectory, { recursive: true, force: true });
+    fs.mkdirSync(cloneDirectory, { recursive: true });
+    execSync(`git clone -- ${tokenUrl} ${cloneDirectory}`, { stdio: 'inherit' });
   } catch (error) {
     console.log(`Repository does not exist yet, creating it: ${remoteDirectory}`);
-    // 如果仓库不存在，我们将在后面创建它
+    isNewRepository = true;
+
+    // 如果仓库不存在，可能需要先创建它
+    try {
+      // 创建一个空的git仓库在克隆目录
+      fs.rmSync(cloneDirectory, { recursive: true, force: true });
+      fs.mkdirSync(cloneDirectory, { recursive: true });
+      process.chdir(cloneDirectory);
+      execSync('git init', { stdio: 'inherit' });
+      execSync(`git remote add origin ${tokenUrl}`, { stdio: 'inherit' });
+
+      // 创建一个空提交
+      execSync('git config --local user.name "github-ci"', { stdio: 'inherit' });
+      execSync('git config --local user.email "github-ci@example.com"', { stdio: 'inherit' });
+      fs.writeFileSync('README.md', `# ${remoteDirectory.split('/')[1]}\n\nSplit from monorepo.\n`);
+      execSync('git add README.md', { stdio: 'inherit' });
+      execSync('git commit -m "Initial commit"', { stdio: 'inherit' });
+    } catch (initError) {
+      console.error('初始化仓库失败:', initError.message);
+      // 返回基础目录并继续下一个包
+      process.chdir(baseDir);
+      continue;
+    }
   }
 
-  // 切换到克隆目录
-  process.chdir(cloneDirectory);
+  // 确保我们在克隆目录中
+  try {
+    process.chdir(cloneDirectory);
+    console.log(`Current directory after clone: ${process.cwd()}`);
+  } catch (cdError) {
+    console.error('无法切换到克隆目录:', cdError.message);
+    // 返回基础目录并继续下一个包
+    process.chdir(baseDir);
+    continue;
+  }
 
   try {
-    execWithOutput('git fetch');
+    if (!isNewRepository) {
+      execWithOutput('git fetch');
+    }
 
     console.log(`Trying to checkout ${branch} branch`);
 
@@ -87,7 +166,17 @@ for (const [index, [localDirectory, remoteDirectory, branch = 'main']] of config
     if (!branchSwitchedSuccessfully) {
       console.log(`Creating branch "${branch}" as it doesn't exist`);
       execWithOutput(`git checkout -b ${branch}`);
-      execWithOutput(`git push --quiet origin ${branch}`);
+      try {
+        execWithOutput(`git push --quiet origin ${branch}`);
+      } catch (pushError) {
+        if (isNewRepository) {
+          // 新仓库的首次推送
+          console.log('首次推送分支到新仓库');
+          execWithOutput(`git push -u origin ${branch}`);
+        } else {
+          console.log('推送分支失败，可能是新仓库或无权限，继续执行');
+        }
+      }
     }
   } catch (error) {
     // 新的仓库，这是正常的
@@ -100,14 +189,21 @@ for (const [index, [localDirectory, remoteDirectory, branch = 'main']] of config
   console.log('Cleaning destination repository of old files');
 
   // 创建构建目录
-  fs.mkdirSync(`${buildDirectory}/.git`, { recursive: true });
+  if (!fs.existsSync(buildDirectory)) {
+    fs.mkdirSync(buildDirectory, { recursive: true });
+  }
+
+  const gitDir = path.join(buildDirectory, '.git');
+  if (!fs.existsSync(gitDir)) {
+    fs.mkdirSync(gitDir, { recursive: true });
+  }
 
   // 复制 .git 目录到构建目录
   try {
-    execSync(`cp -r ${cloneDirectory}/.git ${buildDirectory}`, { stdio: 'inherit' });
+    execSync(`cp -r ${cloneDirectory}/.git/* ${buildDirectory}/.git/`, { stdio: 'inherit' });
   } catch (error) {
     console.error('Failed to copy .git directory', error);
-    process.exit(1);
+    continue;
   }
 
   // 复制本地目录到构建目录
@@ -120,11 +216,19 @@ for (const [index, [localDirectory, remoteDirectory, branch = 'main']] of config
     execSync(`rsync -a ${localDirectory}/ ${buildDirectory} --exclude .git`, { stdio: 'inherit' });
   } catch (error) {
     console.error('Failed to copy files', error);
-    process.exit(1);
+    continue;
   }
 
   // 切换到构建目录
-  process.chdir(buildDirectory);
+  try {
+    process.chdir(buildDirectory);
+    console.log(`Current directory after build: ${process.cwd()}`);
+  } catch (cdError) {
+    console.error('无法切换到构建目录:', cdError.message);
+    // 返回基础目录并继续下一个包
+    process.chdir(baseDir);
+    continue;
+  }
 
   // 查看状态和添加更改
   execWithOutput('git status');
@@ -139,13 +243,30 @@ for (const [index, [localDirectory, remoteDirectory, branch = 'main']] of config
     execSync(`git commit -m "${commitMessage}"`, { stdio: 'inherit' });
   } catch (error) {
     console.log('No changes to commit, skipping');
+    // 返回基础目录
+    process.chdir(baseDir);
     continue;
   }
 
   // 推送更改
   console.log('Pushing changes');
-  execWithOutput(`git push origin ${branch}`);
+  try {
+    execWithOutput(`git push origin ${branch}`);
+  } catch (pushError) {
+    console.error('推送更改失败，尝试强制推送:', pushError.message);
+    try {
+      execWithOutput(`git push -f origin ${branch}`);
+    } catch (forcePushError) {
+      console.error('强制推送也失败:', forcePushError.message);
+    }
+  }
+
+  // 返回基础目录
+  process.chdir(baseDir);
+  console.log(`\n----- 完成处理包 ${localDirectory} -----\n`);
 }
+
+console.log('所有任务已完成');
 
 /**
  * 创建提交信息
@@ -166,6 +287,6 @@ function execWithOutput(command) {
   } catch (error) {
     console.error(`Command failed: ${command}`);
     console.error(error.stdout || error.message);
-    return '';
+    throw error; // 重新抛出错误以便上层函数处理
   }
 }
