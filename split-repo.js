@@ -38,10 +38,10 @@ console.log(`Current directory: ${baseDir}`);
 
 // 定义要拆分的包和对应的目标仓库
 const config = [
-  ['packages/demo-expo-app', 'umworks/demo-expo-app', 'main'],
-  ['packages/demo-tauri-app', 'umworks/demo-tauri-app', 'main'],
-  ['packages/demo-react-vite', 'umworks/demo-react-vite', 'main'],
-  ['packages/demo-taro-react', 'umworks/demo-taro-react', 'main'],
+  ['packages/demo-expo-app', 'umworks/demo-expo-app', 'master'],
+  ['packages/demo-tauri-app', 'umworks/demo-tauri-app', 'master'],
+  ['packages/demo-react-vite', 'umworks/demo-react-vite', 'master'],
+  ['packages/demo-taro-react', 'umworks/demo-taro-react', 'master'],
 ];
 
 // 获取最近提交修改的文件
