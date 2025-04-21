@@ -59,9 +59,9 @@ jobs:
           - platform: 'macos-latest' # for Intel based macs.
             args: '--target x86_64-apple-darwin --bundles app'
             suffix: 'macos-intel'
-          - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
-            args: ''
-            suffix: 'linux'
+#          - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
+#            args: ''
+#            suffix: 'linux'
           - platform: 'windows-latest'
             args: ''
             suffix: 'windows'
