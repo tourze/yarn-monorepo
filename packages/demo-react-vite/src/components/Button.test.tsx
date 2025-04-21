@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Button } from './Button';
 import { describe, it, expect, vi } from 'vitest';
@@ -15,9 +14,9 @@ describe('Button Component', () => {
 
   it('renders correctly with custom props', () => {
     render(
-      <Button 
-        variant="secondary" 
-        size="large" 
+      <Button
+        variant="secondary"
+        size="large"
         className="custom-class"
       >
         Custom Button
