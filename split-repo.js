@@ -39,9 +39,9 @@ console.log(`Current directory: ${baseDir}`);
 // 定义要拆分的包和对应的目标仓库
 const config = [
   ['packages/demo-expo-app', 'tourze/demo-expo-app', 'master'],
-  ['packages/demo-tauri-app', 'tourze/demo-tauri-app', 'master'],
   ['packages/demo-react-vite', 'tourze/demo-react-vite', 'master'],
   ['packages/demo-taro-react', 'tourze/demo-taro-react', 'master'],
+  ['packages/demo-tauri-app', 'tourze/demo-tauri-app', 'master'],
 ];
 
 // 获取最近提交修改的文件

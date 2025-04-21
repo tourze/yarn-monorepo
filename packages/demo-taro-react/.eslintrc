@@ -3,5 +3,13 @@
   "rules": {
     "react/jsx-uses-react": "off",
     "react/react-in-jsx-scope": "off"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["babel.config.js", "*.config.js"],
+      "rules": {
+        "import/no-commonjs": "off"
+      }
+    }
+  ]
 }
