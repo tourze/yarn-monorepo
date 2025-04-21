@@ -2,6 +2,7 @@
   "name": "demo-expo-app",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -58,6 +59,7 @@
     "@types/jest": "^29.5.12",
     "@types/react": "~18.3.12",
     "@types/react-test-renderer": "^18.3.0",
+    "@typescript-eslint/parser": "^8.30.1",
     "babel-jest": "^29.7.0",
     "eslint": "^9.24.0",
     "eslint-plugin-react": "^7.34.1",
