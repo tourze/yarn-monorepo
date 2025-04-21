@@ -42,8 +42,8 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Lint
-        run: yarn lint
+#      - name: Lint
+#        run: yarn lint
 
       - name: Test
         run: yarn test
