@@ -93,13 +93,13 @@ jobs:
         run: yarn build:weapp
 
       - name: Upload H5 artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: h5-build
           path: dist-h5
 
       - name: Upload WeChat Mini Program artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: weapp-build
           path: dist-weapp
