@@ -1,24 +1,24 @@
 import js from '@eslint/js';
+import tseslint from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
 import importPlugin from 'eslint-plugin-import';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
-import tseslint from 'typescript-eslint';
 
 export default [
   js.configs.recommended,
-  ...tseslint.configs.recommended,
-  // 通用 TypeScript 文件规则
   {
     files: ['**/*.{ts,tsx}'],
     plugins: {
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
       import: importPlugin,
+      '@typescript-eslint': tseslint,
     },
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
-      parser: tseslint.parser,
+      parser: tsParser,
       parserOptions: {
         project: ['./tsconfig.json'],
         tsconfigRootDir: import.meta.dirname,
@@ -83,7 +83,7 @@ export default [
   {
     files: ['**/vite.config.ts', '**/vitest.config.ts'],
     languageOptions: {
-      parser: tseslint.parser,
+      parser: tsParser,
       parserOptions: {
         project: null, // 禁用 parserOptions.project
       },
