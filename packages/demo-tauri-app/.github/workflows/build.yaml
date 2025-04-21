@@ -39,9 +39,6 @@ jobs:
         if: steps.yarn-cache.outputs.cache-hit != 'true'
         run: yarn install
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
 #      - name: Lint
 #        run: yarn lint
 
@@ -50,13 +47,25 @@ jobs:
 
   build:
     name: Build
-    runs-on: ${{ matrix.os }}
     needs: test-and-lint
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
 
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        include:
+          - platform: 'macos-latest' # for Arm based macs (M1 and above).
+            args: '--target aarch64-apple-darwin'
+            suffix: 'macos-arm'
+          - platform: 'macos-latest' # for Intel based macs.
+            args: '--target x86_64-apple-darwin --bundles app'
+            suffix: 'macos-intel'
+          - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
+            args: ''
+            suffix: 'linux'
+          - platform: 'windows-latest'
+            args: ''
+            suffix: 'windows'
+    runs-on: ${{ matrix.platform }}
 
     steps:
       - name: Checkout code
@@ -86,8 +95,19 @@ jobs:
         if: steps.yarn-cache.outputs.cache-hit != 'true'
         run: yarn install
 
-      - name: Install Rust
+      - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
+        with:
+          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+        # webkitgtk 4.0 is for Tauri v1 - webkitgtk 4.1 is for Tauri v2.
+        # You can remove the one that doesn't apply to your app to speed up the workflow a bit.
 
       - name: Build Tauri app
         run: yarn tauri build
@@ -95,5 +115,5 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ matrix.os }}
+          name: dist-${{ matrix.suffix }}
           path: src-tauri/target/release/bundle/
