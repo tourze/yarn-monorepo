@@ -4,7 +4,10 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    // @ts-ignore
+    react(),
+  ],
   test: {
     globals: true,
     environment: 'jsdom',
@@ -18,6 +21,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // eslint-disable-next-line no-undef
       '@': resolve(__dirname, 'src'),
     },
   },
